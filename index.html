@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eric Koegler</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Scroll track: its height sets how long the animation lasts.
+       The stage inside sticks to the screen while you scroll through it. -->
+  <div class="track" id="track">
+    <div class="stage">
+      <svg id="scene" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="skyDay" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#a9cde9"/>
+            <stop offset="0.65" stop-color="#f7e6bd"/>
+          </linearGradient>
+          <linearGradient id="skyDusk" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#231c45"/>
+            <stop offset="0.35" stop-color="#6b2f6e"/>
+            <stop offset="0.55" stop-color="#d1496b"/>
+            <stop offset="0.65" stop-color="#f7934c"/>
+          </linearGradient>
+
+          <radialGradient id="sunFill" cx="0.4" cy="0.35" r="0.7">
+            <stop offset="0" stop-color="#fff7d1"/>
+            <stop offset="0.5" stop-color="#ffc35a"/>
+            <stop offset="1" stop-color="#ff8a3d"/>
+          </radialGradient>
+          <radialGradient id="sunFillDusk" cx="0.5" cy="0.4" r="0.7">
+            <stop offset="0" stop-color="#ffd27a"/>
+            <stop offset="0.6" stop-color="#ff6a3d"/>
+            <stop offset="1" stop-color="#e2384f"/>
+          </radialGradient>
+          <radialGradient id="glow">
+            <stop offset="0" stop-color="#ffb35c" stop-opacity="0.7"/>
+            <stop offset="1" stop-color="#ffb35c" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <!-- Layers are painted bottom to top -->
+        <rect width="1600" height="1000" fill="#f4efe6"/>
+        <rect id="skyDayLayer"  width="1600" height="1000" fill="url(#skyDay)"  opacity="0"/>
+        <rect id="skyDuskLayer" width="1600" height="1000" fill="url(#skyDusk)" opacity="0"/>
+
+        <!-- The sun sits behind the ground, so it "sets" behind the horizon -->
+        <g id="sun" transform="translate(800 400)">
+          <circle id="sunGlow"     r="600" fill="url(#glow)"        opacity="0"/>
+          <circle id="sunBody"     r="220" fill="url(#sunFill)"     opacity="0"/>
+          <circle id="sunBodyDusk" r="220" fill="url(#sunFillDusk)" opacity="0"/>
+          <circle id="sunOutline"  r="220" fill="none" stroke="#2a2420" stroke-width="3"/>
+        </g>
+
+        <!-- Mountain layers, far → near. Each is one flat colour, lighter = further away.
+             Shapes come from ranges.js; slide-in and colours are set in script.js. -->
+        <path id="mtFar"  fill="#a7b3cc" transform="translate(0 650)"/>
+        <path id="mtMid"  fill="#7d84a3" transform="translate(0 500)"/>
+        <path id="mtNear" fill="#4f4f6e" transform="translate(0 380)"/>
+        <!-- Nearest layer = the ground; its colour must match --earth in style.css -->
+        <path id="ground" fill="#2a2232" transform="translate(0 300)"/>
+      </svg>
+
+      <p class="hint" id="hint">scroll ↓</p>
+    </div>
+  </div>
+
+  <!-- The "earth": continues the ground colour, holds the actual content -->
+  <main class="earth">
+    <div class="content">
+      <h1>Eric Koegler</h1>
+      <p class="tagline">A line or two about who you are and what you make.</p>
+      <ul class="links">
+        <li><a href="https://github.com/ermako">GitHub</a></li>
+        <li><a href="#">Projects</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+
+    <!-- Settings: scrolls in with the content, then sticks to the bottom-right corner -->
+    <div class="settings">
+      <div class="settings-anchor">
+        <div class="picker" id="picker" hidden>
+          <p class="picker-title">Mountain range</p>
+          <div class="picker-grid" id="pickerGrid"></div>
+        </div>
+        <button class="gear" id="gear" type="button" aria-label="Settings" aria-expanded="false" aria-controls="picker">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script src="ranges.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

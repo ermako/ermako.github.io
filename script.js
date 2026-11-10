@@ -7,7 +7,6 @@ const track = $('track');
 const els = {
   skyDay: $('skyDayLayer'),
   skyDusk: $('skyDuskLayer'),
-  sun: $('sun'),
   sunGlow: $('sunGlow'),
   sunBody: $('sunBody'),
   sunBodyDusk: $('sunBodyDusk'),
@@ -15,17 +14,34 @@ const els = {
   hint: $('hint'),
 };
 
-// Mountain layers, far → near.
-//   from:     how far below its resting place it starts (SVG units)
-//   at:       scroll window in which it slides up
+// Mountain layers, far → near. The sun never moves on screen; it "sets"
+// because the mountains rise over it. Shapes in ranges.js are drawn at
+// their final resting place. Each layer rises at one constant speed and
+// lands exactly at rest when the animation ends, where normal page
+// scrolling takes over.
+//   speed:    fraction of normal page-scroll speed. The ground is 1, so it
+//             moves exactly like page content; further layers are slower
+//             (parallax). Slower layers also start appearing earlier.
 //   day/dusk: flat fill colour; it blends from day to dusk as the sun sets
 //   key:      which shape to use from each range in ranges.js
 const mountains = [
-  { key: 'far',    el: $('mtFar'),  from: 650, at: [0.12, 0.36], day: '#a7b3cc', dusk: '#9b5577' },
-  { key: 'mid',    el: $('mtMid'),  from: 500, at: [0.15, 0.38], day: '#7d84a3', dusk: '#6e3d62' },
-  { key: 'near',   el: $('mtNear'), from: 380, at: [0.18, 0.40], day: '#4f4f6e', dusk: '#4a2f4f' },
-  { key: 'ground', el: $('ground'), from: 300, at: [0.20, 0.42], day: '#2a2232', dusk: '#2a2232' },
+  { key: 'far',    el: $('mtFar'),  speed: 0.5,  day: '#a7b3cc', dusk: '#9b5577' },
+  { key: 'mid',    el: $('mtMid'),  speed: 0.65, day: '#7d84a3', dusk: '#6e3d62' },
+  { key: 'near',   el: $('mtNear'), speed: 0.8,  day: '#4f4f6e', dusk: '#4a2f4f' },
+  { key: 'ground', el: $('ground'), speed: 1,    day: '#2a2232', dusk: '#2a2232' },
 ];
+
+// Converting scroll pixels to SVG units (the viewBox is 1600x1000 with
+// "slice" scaling, so this depends on the window shape). Updated on resize.
+const scene = $('scene');
+let unitsPerPx = 1;
+let trackScroll = 0; // how many px of scrolling the animation lasts
+function measure() {
+  const r = scene.getBoundingClientRect();
+  unitsPerPx = 1 / Math.max(r.width / 1600, r.height / 1000);
+  trackScroll = Math.max(0, track.offsetHeight - window.innerHeight);
+  placeMenu();
+}
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -42,6 +58,9 @@ const mix = (a, b, t) => {
 };
 
 function render(p) {
+  // colour revealed by bounce-scrolling (see html.at-top in style.css)
+  document.documentElement.classList.toggle('at-top', p < 0.5);
+
   els.hint.style.opacity = 0.7 * (1 - seg(p, 0, 0.08));
 
   // 1. plain circle → filled sun
@@ -52,15 +71,15 @@ function render(p) {
   els.skyDay.style.opacity = seg(p, 0.15, 0.45);
   els.sunGlow.style.opacity = seg(p, 0.25, 0.55);
 
-  // 3. sun sinks, sky (and mountains) turn to dusk
-  const dusk = seg(p, 0.5, 0.85);
-  const y = lerp(400, 720, seg(p, 0.35, 0.9));
-  els.sun.setAttribute('transform', `translate(800 ${y})`);
+  // 3. mountains climb over the (stationary) sun, sky turns to dusk
+  const dusk = seg(p, 0.55, 0.95);
   els.sunBodyDusk.style.opacity = dusk;
   els.skyDusk.style.opacity = dusk;
 
+  // scrolling left until the animation ends, in SVG units
+  const left = (1 - p) * trackScroll * unitsPerPx;
   for (const m of mountains) {
-    m.el.setAttribute('transform', `translate(0 ${lerp(m.from, 0, seg(p, ...m.at))})`);
+    m.el.setAttribute('transform', `translate(0 ${m.speed * left})`);
     m.el.setAttribute('fill', mix(m.day, m.dusk, dusk));
   }
 }
@@ -78,7 +97,9 @@ const store = {
   set(v) { try { localStorage.setItem(STORAGE_KEY, v); } catch { /* storage blocked: choice just won't persist */ } },
 };
 
-let currentRange = clamp(parseInt(store.get(), 10) || 0, 0, RANGES.length - 1);
+// saved choice, or range 1 if there's none (or it no longer exists)
+const savedRange = parseInt(store.get(), 10);
+let currentRange = savedRange >= 0 && savedRange < RANGES.length ? savedRange : 0;
 
 function applyRange(i) {
   currentRange = i;
@@ -86,56 +107,120 @@ function applyRange(i) {
 }
 applyRange(currentRange);
 
-// ---------- Settings gear + picker ----------
+// The top edge of every range's ground, as segments [xMin, xMax, yMax] in SVG
+// units (at rest). The menu sits below the lowest of them, so it stays put
+// whichever range is selected. Read straight from the path data: a line or
+// curve never dips below its lowest (control) point, so that's a safe floor
+// and costs next to nothing. Paths using other commands (e.g. hand-drawn
+// ones) fall back to sampling points along the path.
+function groundSegments(d) {
+  const tokens = d.match(/[a-zA-Z]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) || [];
+  const segs = [];
+  let cx = 0, cy = 0, i = 0, cmd = '';
+  const num = () => parseFloat(tokens[i++]);
+  while (i < tokens.length) {
+    if (/[a-zA-Z]/.test(tokens[i])) cmd = tokens[i++];
+    if (cmd === 'M') { cx = num(); cy = num(); cmd = 'L'; continue; } // further pairs are lines
+    if (cmd === 'Z' || cmd === 'z') continue;
+    let xs, ys;
+    if (cmd === 'L') { const x = num(), y = num(); xs = [cx, x]; ys = [cy, y]; cx = x; cy = y; }
+    else if (cmd === 'C') { const p = [num(), num(), num(), num(), num(), num()]; xs = [cx, p[0], p[2], p[4]]; ys = [cy, p[1], p[3], p[5]]; cx = p[4]; cy = p[5]; }
+    else return null; // other commands: caller samples instead
+    if (Math.max(...ys) >= 999) continue; // the shape's sides and bottom, not the top edge
+    segs.push([Math.min(...xs), Math.max(...xs), Math.max(...ys)]);
+  }
+  return segs;
+}
+function sampledSegments(d) {
+  const probe = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  probe.setAttribute('d', d);
+  scene.querySelector('defs').append(probe);
+  const len = probe.getTotalLength(), segs = [];
+  let prev = null;
+  for (let s = 0; s <= len; s += 12) {
+    const pt = probe.getPointAtLength(s);
+    if (prev && pt.y < 999 && prev.y < 999) segs.push([Math.min(prev.x, pt.x) - 6, Math.max(prev.x, pt.x) + 6, Math.max(prev.y, pt.y)]);
+    prev = pt;
+  }
+  probe.remove();
+  return segs;
+}
+const groundEdges = RANGES.map((range) => groundSegments(range.ground) ?? sampledSegments(range.ground));
 
-const gear = $('gear');
-const picker = $('picker');
-const grid = $('pickerGrid');
-const SVG_NS = 'http://www.w3.org/2000/svg';
-const svgEl = (tag, attrs) => {
-  const el = document.createElementNS(SVG_NS, tag);
-  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-  return el;
-};
+// ---------- Range menu ----------
 
-// One thumbnail per range, drawn as the finished sunset.
-// The gradients are shared with the main scene's <defs>.
-RANGES.forEach((range, i) => {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'thumb';
-  btn.setAttribute('aria-label', `Mountain range ${i + 1}`);
-  btn.setAttribute('aria-pressed', String(i === currentRange));
-
-  const svg = svgEl('svg', { viewBox: '0 250 1600 750', preserveAspectRatio: 'xMidYMid slice', 'aria-hidden': 'true' });
-  svg.append(
-    svgEl('rect', { y: 0, width: 1600, height: 1000, fill: 'url(#skyDusk)' }),
-    svgEl('circle', { cx: 800, cy: 720, r: 220, fill: 'url(#sunFillDusk)' }),
-    ...mountains.map((m) => svgEl('path', { d: range[m.key], fill: m.dusk })),
-  );
-  const label = document.createElement('span');
-  label.textContent = i + 1;
-  btn.append(svg, label);
-
-  btn.addEventListener('click', () => {
-    applyRange(i);
-    store.set(String(i));
-    grid.querySelectorAll('.thumb').forEach((t, j) => t.setAttribute('aria-pressed', String(j === i)));
-  });
-  grid.append(btn);
+// One option per range. A range can have a `name` (e.g. a famous peak you
+// recreate); generated ones fall back to "Range N".
+const rangeMenu = $('rangeMenu');
+RANGES.forEach((range, i) => rangeMenu.add(new Option(range.name || `Range ${i + 1}`, i)));
+rangeMenu.value = currentRange;
+rangeMenu.addEventListener('change', () => {
+  applyRange(Number(rangeMenu.value));
+  store.set(rangeMenu.value);
+  sizeMenu();
 });
 
-function setPickerOpen(open) {
-  picker.hidden = !open;
-  gear.setAttribute('aria-expanded', String(open));
-  if (open) grid.children[currentRange]?.focus();
+// Text width in the menu's font (measured on a canvas; nothing is drawn)
+const measureCtx = document.createElement('canvas').getContext('2d');
+function menuTextWidth(text) {
+  const cs = getComputedStyle(rangeMenu);
+  measureCtx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const spacing = parseFloat(cs.letterSpacing) || 0; // canvas doesn't apply letter-spacing
+  return measureCtx.measureText(text).width + spacing * text.length;
 }
-gear.addEventListener('click', () => setPickerOpen(picker.hidden));
+function menuPadding() {
+  const cs = getComputedStyle(rangeMenu);
+  return parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+}
+
+// Size the menu to the selected name, with room for the arrow (browsers can
+// otherwise clip the text). It's right-aligned, so only its left edge moves.
+function sizeMenu() {
+  const w = menuTextWidth(rangeMenu.selectedOptions[0].text);
+  rangeMenu.style.width = `${Math.ceil(w + menuPadding()) + 2}px`;
+}
+sizeMenu();
+
+// Rest the menu just below the ground's edge: the lowest edge point of ANY
+// range across the space the menu can take up (its widest name), so its
+// position never changes when switching ranges.
+function placeMenu() {
+  const r = scene.getBoundingClientRect();
+  const scale = 1 / unitsPerPx;
+  const offX = (r.width - 1600 * scale) / 2;  // where the viewBox starts on screen
+  const offY = (r.height - 1000 * scale) / 2; // (negative when "slice" crops it)
+  const m = rangeMenu.getBoundingClientRect();
+  const widest = Math.max(...[...rangeMenu.options].map((o) => menuTextWidth(o.text))) + menuPadding();
+  const x2 = (m.right - r.left - offX) * unitsPerPx;
+  const x1 = x2 - widest * unitsPerPx;
+  let edge = -Infinity;
+  for (const segs of groundEdges) for (const [a, b, y] of segs) if (b >= x1 && a <= x2 && y > edge) edge = y;
+  if (edge === -Infinity) return;
+  const GAP = 10; // extra px between the ground's edge and the menu's box (its padding already adds a little)
+  rangeMenu.style.bottom = `${r.height - (offY + edge * scale) - GAP - m.height}px`;
+}
+document.fonts?.ready.then(() => { sizeMenu(); placeMenu(); });
+
+// ---------- Contact popup ----------
+
+const contactBtn = $('contactBtn');
+const contactPopup = $('contactPopup');
+
+function setContactOpen(open) {
+  contactPopup.hidden = !open;
+  contactBtn.setAttribute('aria-expanded', String(open));
+  if (!open) return;
+  // keep the popup on screen: nudge it left if it would run off the right edge
+  contactPopup.style.translate = '';
+  const overflow = contactPopup.getBoundingClientRect().right - (document.documentElement.clientWidth - 16);
+  if (overflow > 0) contactPopup.style.translate = `${-overflow}px 0`;
+}
+contactBtn.addEventListener('click', () => setContactOpen(contactPopup.hidden));
 document.addEventListener('click', (e) => {
-  if (!picker.hidden && !picker.contains(e.target) && !gear.contains(e.target)) setPickerOpen(false);
+  if (!contactPopup.hidden && !contactBtn.contains(e.target) && !contactPopup.contains(e.target)) setContactOpen(false);
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !picker.hidden) { setPickerOpen(false); gear.focus(); }
+  if (e.key === 'Escape' && !contactPopup.hidden) { setContactOpen(false); contactBtn.focus(); }
 });
 
 // ---------- Scroll wiring ----------
@@ -143,6 +228,8 @@ document.addEventListener('keydown', (e) => {
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 if (reduceMotion) {
+  measure();
+  window.addEventListener('resize', measure);
   render(1);
 } else {
   let ticking = false;
@@ -152,6 +239,95 @@ if (reduceMotion) {
     requestAnimationFrame(() => { render(progress()); ticking = false; });
   };
   window.addEventListener('scroll', update, { passive: true });
-  window.addEventListener('resize', update);
+  window.addEventListener('resize', () => { measure(); update(); });
+  measure();
   render(progress());
+}
+
+// ---------- Rotating tagline ----------
+
+const tagline = $('tagline');
+// Timings come from taglines.js; the fade durations are handed to the CSS
+const ROTATE_MS = TAGLINE_CHANGE_MS;
+const FADE_MS = TAGLINE_FADE_OUT_MS + TAGLINE_PAUSE_MS; // until the text swaps
+tagline.style.setProperty('--fade-out', `${TAGLINE_FADE_OUT_MS}ms`);
+tagline.style.setProperty('--fade-in', `${TAGLINE_FADE_IN_MS}ms`);
+
+// Shuffle-bag per list: every phrase is shown once, in random order, before
+// any repeat. Blank entries are skipped.
+function shuffleBag(list) {
+  const phrases = list.filter((t) => t.trim());
+  let bag = [];
+  return () => {
+    if (!bag.length) {
+      bag = phrases.filter((t) => t !== tagline.textContent); // no back-to-back repeat
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+      }
+    }
+    return bag.pop() ?? phrases[0] ?? tagline.textContent;
+  };
+}
+const autoPhrases = TAGLINES_AUTO.filter((t) => t.trim());
+const drawAuto = shuffleBag(autoPhrases);
+// "next" has its own list; falls back to the automatic one while it's empty
+const drawNext = shuffleBag(TAGLINES_NEXT.some((t) => t.trim()) ? TAGLINES_NEXT : autoPhrases);
+
+// "next" only works once the current phrase has fully faded in, so double
+// clicks (or fast clicking) can't skip through phrases. No visual change.
+let nextArmed = true;
+let armTimer;
+
+let fadeTimer;
+function showPhrase(text) {
+  clearTimeout(fadeTimer);
+  clearTimeout(armTimer);
+  nextArmed = false;
+  armTimer = setTimeout(() => { nextArmed = true; },
+    reduceMotion ? 300 : FADE_MS + TAGLINE_FADE_IN_MS);
+  if (reduceMotion) { tagline.textContent = text; return; }
+  tagline.classList.add('is-fading');
+  fadeTimer = setTimeout(() => {
+    tagline.textContent = text;
+    tagline.classList.remove('is-fading');
+  }, FADE_MS);
+}
+
+// Auto-change: the first change after `firstDelay`, then every ROTATE_MS
+let rotateTimer;
+function restartRotation(firstDelay = ROTATE_MS) {
+  clearTimeout(rotateTimer);
+  if (reduceMotion) return;
+  const tick = () => { showPhrase(drawAuto()); rotateTimer = setTimeout(tick, ROTATE_MS); };
+  rotateTimer = setTimeout(tick, firstDelay);
+}
+
+// "next": a phrase from the "next" list now; every 10th press shows the
+// easter egg instead. The auto-change timer restarts (back to the tame list).
+let nextPresses = 0;
+$('nextTagline').addEventListener('click', () => {
+  if (!nextArmed) return;  // a phrase is still changing: ignore (doesn't count)
+  firstSeen?.disconnect(); // skip the opening hold if they press "next" first
+  nextPresses++;
+  showPhrase(nextPresses % 10 === 0 ? TAGLINE_EASTER_EGG : drawNext());
+  restartRotation();
+});
+
+// Always open on the first phrase and hold it for TAGLINE_FIRST_MS, counted
+// from when the tagline first scrolls into view (it starts below the sunset).
+// IntersectionObserver is handled by the browser, so this costs nothing while
+// scrolling; it fires once and then stops watching.
+// (Pressing "next" before then switches straight to the normal behaviour.)
+tagline.textContent = TAGLINE_FIRST;
+let firstSeen = null;
+if ('IntersectionObserver' in window) {
+  firstSeen = new IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    firstSeen.disconnect();
+    restartRotation(TAGLINE_FIRST_MS);
+  }, { threshold: 0.5 });
+  firstSeen.observe(tagline);
+} else {
+  restartRotation(TAGLINE_FIRST_MS); // very old browsers: count from page load
 }

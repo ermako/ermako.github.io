@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="at-top">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Eric Koegler</title>
+  <link rel="preload" href="fonts/habibi-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -46,8 +47,8 @@
         <rect id="skyDayLayer"  width="1600" height="1000" fill="url(#skyDay)"  opacity="0"/>
         <rect id="skyDuskLayer" width="1600" height="1000" fill="url(#skyDusk)" opacity="0"/>
 
-        <!-- The sun sits behind the ground, so it "sets" behind the horizon -->
-        <g id="sun" transform="translate(800 400)">
+        <!-- The sun stays at the screen centre; the mountains rise over it -->
+        <g id="sun" transform="translate(800 500)">
           <circle id="sunGlow"     r="600" fill="url(#glow)"        opacity="0"/>
           <circle id="sunBody"     r="220" fill="url(#sunFill)"     opacity="0"/>
           <circle id="sunBodyDusk" r="220" fill="url(#sunFillDusk)" opacity="0"/>
@@ -65,38 +66,34 @@
 
       <p class="hint" id="hint">scroll ↓</p>
     </div>
+
+    <!-- Mountain range menu. It sits at the bottom of the scroll track, so it
+         rides up with the ground (which moves at page speed) and comes to rest
+         on it as the sunset finishes. Options are filled in by script.js. -->
+    <select class="range-menu" id="rangeMenu" aria-label="Mountain range"></select>
   </div>
 
   <!-- The "earth": continues the ground colour, holds the actual content -->
   <main class="earth">
     <div class="content">
       <h1>Eric Koegler</h1>
-      <p class="tagline">A line or two about who you are and what you make.</p>
+      <!-- Phrases live in taglines.js; script.js rotates them -->
+      <p class="tagline" id="tagline">it was cloudy, but i used my imagination.</p>
       <ul class="links">
-        <li><a href="https://github.com/ermako">GitHub</a></li>
-        <li><a href="#">Projects</a></li>
-        <li><a href="#">Contact</a></li>
+        <li><a href="/">blog</a></li>
+        <li><a href="https://github.com/ermako">github</a></li>
+        <li><a href="https://www.peakbagger.com/climber/climber.aspx?cid=47973">peakbagger</a></li>
+        <li class="contact">
+          <button type="button" class="link-button" id="contactBtn" aria-expanded="false" aria-controls="contactPopup">contact</button>
+          <span class="contact-popup" id="contactPopup" hidden>eric dot koegler at outlook dot com</span>
+        </li>
+        <li><button type="button" class="link-button" id="nextTagline" aria-label="next tagline">next</button></li>
       </ul>
-    </div>
-
-    <!-- Settings: scrolls in with the content, then sticks to the bottom-right corner -->
-    <div class="settings">
-      <div class="settings-anchor">
-        <div class="picker" id="picker" hidden>
-          <p class="picker-title">Mountain range</p>
-          <div class="picker-grid" id="pickerGrid"></div>
-        </div>
-        <button class="gear" id="gear" type="button" aria-label="Settings" aria-expanded="false" aria-controls="picker">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </button>
-      </div>
     </div>
   </main>
 
   <script src="ranges.js"></script>
+  <script src="taglines.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

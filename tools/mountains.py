@@ -11,15 +11,17 @@ import math
 import random
 from pathlib import Path
 
-COUNT = 20
+COUNT = 5
 OUT = Path(__file__).resolve().parent.parent / "ranges.js"
 
-# base settings per layer (far → near)
+# base settings per layer (far → near). Shapes are drawn at their final resting
+# place: the sun (r=220) is pinned at the screen centre (800, 500), and the far
+# valley bottoms out around y=420, so only the top of the sun shows above it.
 BASE = {
-    "far":    dict(base=640, height=260, rough=0.55, levels=7, smooth_k=0, valley_depth=0.6,  valley_width=260, curve=False),
-    "mid":    dict(base=680, height=170, rough=0.52, levels=6, smooth_k=0, valley_depth=0.55, valley_width=320, curve=False),
-    "near":   dict(base=720, height=100, rough=0.45, levels=4, smooth_k=0, valley_depth=0.5,  valley_width=380, curve=True),
-    "ground": dict(base=770, height=45,  rough=0.4,  levels=3, smooth_k=0, valley_depth=0.3,  valley_width=500, curve=True),
+    "far":    dict(base=420, height=260, rough=0.55, levels=7, smooth_k=0, valley_depth=0.6,  valley_width=260, curve=False),
+    "mid":    dict(base=460, height=170, rough=0.52, levels=6, smooth_k=0, valley_depth=0.55, valley_width=320, curve=False),
+    "near":   dict(base=500, height=100, rough=0.45, levels=4, smooth_k=0, valley_depth=0.5,  valley_width=380, curve=True),
+    "ground": dict(base=550, height=45,  rough=0.4,  levels=3, smooth_k=0, valley_depth=0.3,  valley_width=500, curve=True),
 }
 FIRST_SEEDS = {"far": 11, "mid": 21, "near": 5, "ground": 3}
 

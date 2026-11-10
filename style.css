@@ -1,3 +1,23 @@
+/* Habibi by Magnus Gaarde, self-hosted (SIL Open Font License: fonts/Habibi-OFL.txt).
+   Split like Google Fonts serves it: basic Latin, plus accented letters,
+   which browsers only download if the page uses them. Regular weight only. */
+@font-face {
+  font-family: "Habibi";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/habibi-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Habibi";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/habibi-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
   --paper: #f4efe6;
   --ink:   #2a2420;
@@ -7,16 +27,29 @@
 }
 
 * { box-sizing: border-box; }
+/* `hidden` must always hide, even on elements we give a display value */
+[hidden] { display: none !important; }
 html, body { margin: 0; }
+
+/* Stop the rubber-band bounce past the top/bottom of the page.
+   Set on both: the standard reads it from <html>, but Chrome has long read
+   it from <body>. Only the -y axis, so trackpad back/forward swipes still work. */
+html, body { overscroll-behavior-y: none; }
+
+/* The page background only shows when you bounce-scroll past the top or
+   bottom. script.js switches it to match what's on screen there:
+   cream in the opening scene, dark once you're down on the earth. */
+html { background: var(--earth); }
+html.at-top { background: var(--paper); }
 
 body {
   background: var(--earth);
   color: var(--cream);
-  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-family: "Habibi", ui-serif, Georgia, "Times New Roman", serif;
 }
 
 /* Longer track = slower animation */
-.track { position: relative; height: 400vh; height: 400svh; }
+.track { position: relative; height: 320vh; height: 320svh; }
 
 .stage {
   position: sticky;
@@ -41,16 +74,35 @@ body {
 }
 
 .earth {
-  display: flex;
-  flex-direction: column;
-  min-height: 80vh;
-  padding: 3rem 1.5rem 1.25rem;
+  /* Overlap the bottom of the scene by 2px and paint a solid background over
+     it, so the scene's anti-aliased bottom edge can't show as a thin line. */
+  position: relative;
+  margin-top: -2px;
+  background: var(--earth);
+  padding: calc(0.5rem + 2px) 1.5rem 1.25rem;
+
+  /* Where the page ends: you can scroll until the top of the sun reaches the
+     top of the screen, and no further. The sun's top is 220 SVG units above
+     the screen's middle, and the scene is scaled like the SVG's "slice"
+     (the larger of width/1600 and height/1000). Taller content still fits. */
+  --scene-scale: max(100vw / 1600, 100vh / 1000);
+  min-height: calc(50vh - 220 * var(--scene-scale) + 2px);
+}
+@supports (height: 100dvh) {
+  .earth {
+    --scene-scale: max(100vw / 1600, 100dvh / 1000);
+    min-height: calc(50dvh - 220 * var(--scene-scale) + 2px);
+  }
 }
 .content {
   width: 100%;
   max-width: 40rem;
   margin: 0 auto;
-  padding-bottom: 4rem;
+  /* Pull the text up out of <main> onto the scene's ground, so it sits just
+     under the horizon and is centred on screen at the bottom of the page.
+     (220 × scale = how far <main>'s top sits below the screen's middle there;
+     5.5rem ≈ half the text block's height.) It still moves with the page. */
+  margin-top: calc(-220 * var(--scene-scale) - 5.5rem);
 }
 
 .earth h1 {
@@ -60,95 +112,89 @@ body {
   letter-spacing: -0.01em;
 }
 
-.tagline { margin: 0 0 2.5rem; opacity: 0.75; font-size: 1.15rem; line-height: 1.5; }
+.tagline {
+  margin: 0 0 2.5rem;
+  opacity: 0.75;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  /* fade durations are set in taglines.js (these are just fallbacks) */
+  transition: opacity var(--fade-in, 1.5s) ease-in-out;
+}
+.tagline.is-fading {
+  opacity: 0;
+  transition-duration: var(--fade-out, 0.6s);
+}
+@media (prefers-reduced-motion: reduce) { .tagline { transition: none; } }
 
 .links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1.5rem 2rem; }
-.links a {
+.links a, .link-button {
   color: var(--cream);
   font-size: 1.2rem;
-  text-decoration: underline wavy color-mix(in srgb, var(--sun) 60%, transparent);
-  text-underline-offset: 0.35em;
-  text-decoration-thickness: 1.5px;
+  text-decoration: none;
 }
-.links a:hover, .links a:focus-visible { color: var(--sun); text-decoration-color: var(--sun); }
+.links a:hover, .links a:focus-visible,
+.link-button:hover, .link-button:focus-visible,
+.link-button[aria-expanded="true"] { color: var(--sun); }
 
-/* ---------- Settings gear + mountain picker ---------- */
-
-/* Sticky to the bottom of the screen, but only inside <main>,
-   so it scrolls in with the content and then stays in the corner. */
-.settings {
-  margin-top: auto; /* push to the bottom of <main> */
-  position: sticky;
-  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
-  display: flex;
-  justify-content: flex-end;
-  pointer-events: none;
-}
-.settings-anchor { position: relative; pointer-events: auto; }
-
-.gear {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
+/* Contact is a button (it doesn't navigate) styled to match the links */
+.link-button {
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--cream) 20%, transparent);
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--earth) 80%, #000);
-  color: var(--cream);
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, transform 0.4s;
-}
-.gear:hover, .gear:focus-visible, .gear[aria-expanded="true"] {
-  color: var(--sun);
-  border-color: color-mix(in srgb, var(--sun) 60%, transparent);
-}
-.gear[aria-expanded="true"] { transform: rotate(60deg); }
-
-.picker {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 0.75rem);
-  width: min(28rem, calc(100vw - 2.5rem));
-  max-height: min(70vh, 32rem);
-  overflow-y: auto;
-  padding: 1rem;
-  border: 1px solid color-mix(in srgb, var(--cream) 15%, transparent);
-  border-radius: 0.75rem;
-  background: #1d1724;
-  box-shadow: 0 1rem 2.5rem rgb(0 0 0 / 0.4);
-}
-.picker-title {
-  margin: 0 0 0.75rem;
-  font: 0.75rem/1 ui-monospace, "SF Mono", Menlo, monospace;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  opacity: 0.6;
-}
-.picker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
-@media (max-width: 420px) { .picker-grid { grid-template-columns: repeat(3, 1fr); } }
-
-.thumb {
-  position: relative;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 0.4rem;
-  overflow: hidden;
+  border: 0;
   background: none;
+  font-family: inherit;
+  line-height: inherit;
   cursor: pointer;
 }
-.thumb svg { display: block; width: 100%; aspect-ratio: 16 / 10; }
-.thumb span {
+
+/* Small, quiet popup under "contact" with the spelled-out address */
+.contact { position: relative; }
+.contact-popup {
   position: absolute;
-  left: 0.3rem;
-  bottom: 0.2rem;
-  color: var(--cream);
-  font: 0.7rem/1 ui-monospace, "SF Mono", Menlo, monospace;
-  opacity: 0.8;
+  left: 0;
+  top: calc(100% + 0.75rem);
+  z-index: 1;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  padding: 0.45rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--cream) 12%, transparent);
+  border-radius: 0.4rem;
+  background: #221b29;
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.3);
+  color: #a9a2b2;
+  font: 0.8rem/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.02em;
+  animation: popup-in 0.15s ease-out;
 }
-.thumb:hover { border-color: color-mix(in srgb, var(--cream) 40%, transparent); }
-.thumb[aria-pressed="true"] { border-color: var(--sun); }
-.thumb:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; }
+@keyframes popup-in { from { opacity: 0; transform: translateY(-0.25rem); } }
+@media (prefers-reduced-motion: reduce) { .contact-popup { animation: none; } }
+
+/* ---------- Mountain range menu ---------- */
+
+/* Pinned to the bottom of the scroll track, so it moves with the page (and
+   the ground). script.js sets `bottom` so it rests just below the lowest
+   ground edge of any range (so it never moves), and `width` to fit the
+   selected name. */
+.range-menu {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  max-width: calc(100% - 2.5rem);
+  padding: 0.3rem 1.4rem 0.3rem 0.5rem;
+  border: 0;
+  border-radius: 0.3rem;
+  appearance: none;
+  /* small chevron, same gray as the text */
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238d8796' stroke-width='1.3'/%3E%3C/svg%3E") no-repeat right 0.4rem center;
+  color: #8d8796;
+  font: 0.8rem/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.range-menu:hover, .range-menu:focus-visible { color: var(--cream); }
+.range-menu:focus-visible { outline: 1px solid color-mix(in srgb, var(--cream) 40%, transparent); }
+/* the opened list (where the browser lets us style it) */
+.range-menu option { background: #1d1724; color: var(--cream); }
 
 /* Reduced motion: skip the scroll animation and show the finished sunset */
 @media (prefers-reduced-motion: reduce) {

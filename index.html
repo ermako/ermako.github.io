@@ -88,15 +88,8 @@
             <rect x="320" y="530" width="960" height="16" rx="3"/>
           </g>
           <rect x="320" y="530" width="960" height="3" rx="1.5" fill="#78727f"/>
-          <!-- egg white: flat on top, curving down only near the edges. Its warm edge
-               is a blurred line clipped to the inside, so it fades into the white. -->
-          <defs>
-            <path id="eggWhiteShape" d="M 380 490 C 380 438, 405 407, 470 405 L 1130 405 C 1195 407, 1220 438, 1220 490 Z"/>
-            <clipPath id="eggWhiteClip"><use href="#eggWhiteShape"/></clipPath>
-            <filter id="eggEdgeBlur" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
-          </defs>
-          <use href="#eggWhiteShape" fill="#fffdf8"/>
-          <use href="#eggWhiteShape" fill="none" stroke="#d8c6a8" stroke-width="18" filter="url(#eggEdgeBlur)" clip-path="url(#eggWhiteClip)"/>
+          <!-- egg white: flat on top, curving down only near the edges -->
+          <path fill="#ffffff" d="M 380 490 C 380 438, 405 407, 470 405 L 1130 405 C 1195 407, 1220 438, 1220 490 Z"/>
           <!-- skillet: handle (its inner end tucks behind the pan's side), side, rim -->
           <path fill="#1b161f" d="M 1255 446 L 1640 410 L 1640 446 L 1255 490 Z"/>
           <path fill="#1b161f" d="M 290 456 L 1310 456 L 1262 504 Q 1255 512 1243 512 L 357 512 Q 345 512 338 504 Z"/>

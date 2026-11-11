@@ -85,7 +85,7 @@ function render(p) {
   // colour revealed by bounce-scrolling (see html.at-top in style.css)
   document.documentElement.classList.toggle('at-top', p < 0.5);
 
-  els.hint.style.opacity = 0.7 * (1 - seg(p, 0, 0.08));
+  els.hint.style.opacity = 0.7 * (1 - seg(p, 0, 0.30)); // "scroll" hint fades out over the first 16%
 
   // 1. plain circle → filled sun
   els.sunBody.style.opacity = seg(p, 0.1, 0.4);

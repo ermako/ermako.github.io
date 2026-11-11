@@ -110,7 +110,13 @@
         <path id="ground" fill="#2a2232" transform="translate(0 300)"/>
       </svg>
 
-      <p class="hint" id="hint">scroll ↓</p>
+      <p class="hint" id="hint">scroll
+        <!-- drawn arrow (the ↓ character is a hairline in some fonts) -->
+        <svg class="hint-arrow" viewBox="0 0 12 16" aria-hidden="true">
+          <path d="M6 1.5v12M1.75 9.5 6 13.75l4.25-4.25" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </p>
     </div>
 
     <!-- Mountain range menu. It sits at the bottom of the scroll track, so it

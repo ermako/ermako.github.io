@@ -26,15 +26,21 @@
             <stop offset="0.65" stop-color="#f7934c"/>
           </linearGradient>
 
-          <radialGradient id="sunFill" cx="0.4" cy="0.35" r="0.7">
+          <radialGradient id="sunFill" cx="0.5" cy="0.5" r="0.7">
             <stop offset="0" stop-color="#fff7d1"/>
             <stop offset="0.5" stop-color="#ffc35a"/>
             <stop offset="1" stop-color="#ff8a3d"/>
           </radialGradient>
-          <radialGradient id="sunFillDusk" cx="0.5" cy="0.4" r="0.7">
+          <radialGradient id="sunFillDusk" cx="0.5" cy="0.5" r="0.7">
             <stop offset="0" stop-color="#ffd27a"/>
             <stop offset="0.6" stop-color="#ff6a3d"/>
             <stop offset="1" stop-color="#e2384f"/>
+          </radialGradient>
+          <!-- egg scene only: the yolk (same shape as the sun, lighter true yellow) -->
+          <radialGradient id="yolkFill" cx="0.5" cy="0.5" r="0.7">
+            <stop offset="0" stop-color="#fff6c2"/>
+            <stop offset="0.5" stop-color="#ffdc45"/>
+            <stop offset="1" stop-color="#f7b500"/>
           </radialGradient>
           <radialGradient id="glow">
             <stop offset="0" stop-color="#ffb35c" stop-opacity="0.7"/>
@@ -43,9 +49,11 @@
         </defs>
 
         <!-- Layers are painted bottom to top -->
-        <rect width="1600" height="1000" fill="#f4efe6"/>
+        <rect id="paper" width="1600" height="1000" fill="#f4efe6"/>
         <rect id="skyDayLayer"  width="1600" height="1000" fill="url(#skyDay)"  opacity="0"/>
         <rect id="skyDuskLayer" width="1600" height="1000" fill="url(#skyDusk)" opacity="0"/>
+        <!-- egg scene only: darker cream that fades in over the opening cream -->
+        <rect id="eggBg" class="egg-bg" width="1600" height="1000" fill="#ddd3c3" opacity="0"/>
 
         <!-- The sun stays at the screen centre; the mountains rise over it -->
         <g id="sun" transform="translate(800 500)">
@@ -60,6 +68,41 @@
         <path id="mtFar"  fill="#a7b3cc" transform="translate(0 650)"/>
         <path id="mtMid"  fill="#7d84a3" transform="translate(0 500)"/>
         <path id="mtNear" fill="#4f4f6e" transform="translate(0 380)"/>
+
+        <!-- "egg" scene (joke option at the end of the menu): a skillet on a gas
+             range's grate, and the sun is the yolk. The background stays the
+             opening cream. Drawn at its resting place; it rises as one piece
+             with the ground (the stovetop). -->
+        <g id="eggScene" transform="translate(0 300)">
+          <!-- background-coloured patch under the pan: keeps the yolk from showing through the grate -->
+          <rect class="egg-bg" x="330" y="500" width="940" height="48" fill="#ddd3c3"/>
+          <!-- burner head (no flame) -->
+          <path fill="#3b3742" d="M 735 545 L 740 528 Q 742 524 748 524 L 852 524 Q 858 524 860 528 L 865 545 Z"/>
+          <rect x="745" y="519" width="110" height="6" rx="3" fill="#5a5562"/>
+          <!-- steel grate: support prongs up to the pan, on a rail along the stovetop -->
+          <g fill="#5a5562">
+            <path d="M 404 512 L 426 512 L 430 532 L 400 532 Z"/>
+            <path d="M 604 512 L 626 512 L 630 532 L 600 532 Z"/>
+            <path d="M 974 512 L 996 512 L 1000 532 L 970 532 Z"/>
+            <path d="M 1174 512 L 1196 512 L 1200 532 L 1170 532 Z"/>
+            <rect x="320" y="530" width="960" height="16" rx="3"/>
+          </g>
+          <rect x="320" y="530" width="960" height="3" rx="1.5" fill="#78727f"/>
+          <!-- egg white: flat on top, curving down only near the edges. Its warm edge
+               is a blurred line clipped to the inside, so it fades into the white. -->
+          <defs>
+            <path id="eggWhiteShape" d="M 380 490 C 380 438, 405 407, 470 405 L 1130 405 C 1195 407, 1220 438, 1220 490 Z"/>
+            <clipPath id="eggWhiteClip"><use href="#eggWhiteShape"/></clipPath>
+            <filter id="eggEdgeBlur" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+          </defs>
+          <use href="#eggWhiteShape" fill="#fffdf8"/>
+          <use href="#eggWhiteShape" fill="none" stroke="#d8c6a8" stroke-width="18" filter="url(#eggEdgeBlur)" clip-path="url(#eggWhiteClip)"/>
+          <!-- skillet: handle (its inner end tucks behind the pan's side), side, rim -->
+          <path fill="#1b161f" d="M 1255 446 L 1640 410 L 1640 446 L 1255 490 Z"/>
+          <path fill="#1b161f" d="M 290 456 L 1310 456 L 1262 504 Q 1255 512 1243 512 L 357 512 Q 345 512 338 504 Z"/>
+          <path fill="#1b161f" d="M 270 448 Q 270 442 278 442 L 1322 442 Q 1330 442 1330 448 L 1330 452 Q 1330 458 1322 458 L 278 458 Q 270 458 270 452 Z"/>
+        </g>
+
         <!-- Nearest layer = the ground; its colour must match --earth in style.css -->
         <path id="ground" fill="#2a2232" transform="translate(0 300)"/>
       </svg>

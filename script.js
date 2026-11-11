@@ -34,6 +34,8 @@ const mountains = [
 // Converting scroll pixels to SVG units (the viewBox is 1600x1000 with
 // "slice" scaling, so this depends on the window shape). Updated on resize.
 const scene = $('scene');
+const eggScene = $('eggScene');
+const eggBg = $('eggBg');
 let unitsPerPx = 1;
 let trackScroll = 0; // how many px of scrolling the animation lasts
 function measure() {
@@ -82,6 +84,11 @@ function render(p) {
     m.el.setAttribute('transform', `translate(0 ${m.speed * left})`);
     m.el.setAttribute('fill', mix(m.day, m.dusk, dusk));
   }
+
+  // "egg" scene (only visible when selected): the skillet rises with the
+  // ground at page speed
+  eggScene.setAttribute('transform', `translate(0 ${left})`);
+  eggBg.style.opacity = seg(p, 0.15, 0.45); // darker cream fades in (same timing as the day sky)
 }
 
 function progress() {
@@ -97,6 +104,16 @@ const store = {
   set(v) { try { localStorage.setItem(STORAGE_KEY, v); } catch { /* storage blocked: choice just won't persist */ } },
 };
 
+// The joke option at the end of the menu: a fried egg in a skillet instead of
+// mountains (drawn in index.html, #eggScene). Its "ground" is the flat
+// stovetop, kept no lower than the mountain grounds so the menu doesn't move.
+RANGES.push({
+  name: 'egg',
+  egg: true,
+  far: '', mid: '', near: '',
+  ground: 'M -40 1000 L -40 545 L 1640 545 L 1640 1000 Z',
+});
+
 // saved choice, or range 1 if there's none (or it no longer exists)
 const savedRange = parseInt(store.get(), 10);
 let currentRange = savedRange >= 0 && savedRange < RANGES.length ? savedRange : 0;
@@ -104,8 +121,10 @@ let currentRange = savedRange >= 0 && savedRange < RANGES.length ? savedRange : 
 function applyRange(i) {
   currentRange = i;
   for (const m of mountains) m.el.setAttribute('d', RANGES[i][m.key]);
+  scene.classList.toggle('egg', Boolean(RANGES[i].egg)); // CSS swaps the scene
 }
 applyRange(currentRange);
+
 
 // The top edge of every range's ground, as segments [xMin, xMax, yMax] in SVG
 // units (at rest). The menu sits below the lowest of them, so it stays put

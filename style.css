@@ -196,6 +196,22 @@ body {
 /* the opened list (where the browser lets us style it) */
 .range-menu option { background: #1d1724; color: var(--cream); }
 
+/* ---------- "egg" joke scene ---------- */
+
+/* Hidden unless "egg" is picked; then it replaces the mountains, and the sky
+   and glow are hidden so the background stays the opening cream */
+#eggScene, #eggBg { display: none; }
+#scene.egg #eggScene, #scene.egg #eggBg { display: inline; }
+#scene.egg :is(#skyDayLayer, #skyDuskLayer, #sunGlow, #mtFar, #mtMid, #mtNear) { display: none; }
+/* egg scene background: starts as the opening cream, then a darker cream
+   (same tint) fades in (#eggBg, timed in script.js) */
+#scene { --egg-bg: #ddd3c3; }
+#scene .egg-bg { fill: var(--egg-bg); }
+/* the sun becomes a yolk: its own yellow gradient, and no sunset colour shift */
+#scene.egg #sunBody { fill: url(#yolkFill); }
+#scene.egg #sunBodyDusk { display: none; }
+
+
 /* Reduced motion: skip the scroll animation and show the finished sunset */
 @media (prefers-reduced-motion: reduce) {
   .track { height: 100vh; height: 100svh; }

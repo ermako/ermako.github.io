@@ -4,6 +4,7 @@
 
 const $ = (id) => document.getElementById(id);
 const track = $('track');
+const stage = document.querySelector('.stage');
 const els = {
   skyDay: $('skyDayLayer'),
   skyDusk: $('skyDuskLayer'),
@@ -29,6 +30,9 @@ const mountains = [
   { key: 'mid',    el: $('mtMid'),  speed: 0.65, day: '#7d84a3', dusk: '#6e3d62' },
   { key: 'near',   el: $('mtNear'), speed: 0.8,  day: '#4f4f6e', dusk: '#4a2f4f' },
   { key: 'ground', el: $('ground'), speed: 1,    day: '#2a2232', dusk: '#2a2232' },
+  // egg scene only: faster than the skillet (which rides on the ground at 1),
+  // so the egg white starts hidden behind the pan and rises out of it
+  { key: 'eggWhite', el: $('eggWhite'), speed: 1.2, day: '#ffffff', dusk: '#ffffff', eggFit: true },
 ];
 
 // Converting scroll pixels to SVG units (the viewBox is 1600x1000 with
@@ -41,8 +45,26 @@ let trackScroll = 0; // how many px of scrolling the animation lasts
 function measure() {
   const r = scene.getBoundingClientRect();
   unitsPerPx = 1 / Math.max(r.width / 1600, r.height / 1000);
-  trackScroll = Math.max(0, track.offsetHeight - window.innerHeight);
+  // the stage's height (fixed on phones), not the window's, which changes as
+  // the URL bar shows/hides; the sticky part of the scroll lasts this long
+  trackScroll = Math.max(0, track.offsetHeight - stage.offsetHeight);
   placeMenu();
+  fitEgg();
+}
+
+// Egg scene on narrow screens (phones): shrink the yolk, egg white and skillet
+// together, towards a point on the stovetop under the pan, until the whole
+// skillet fits the screen width. Scale 1 (no change) wherever it already fits.
+let eggFit = ''; // extra transform for the egg pieces ('' = none)
+const EGG_ANCHOR = [800, 545];  // centre of the stovetop under the pan (SVG units)
+const EGG_HALF_WIDTH = 700;     // pan + a bit of handle, from the centre (SVG units)
+function fitEgg() {
+  const visibleWidth = scene.getBoundingClientRect().width * unitsPerPx;
+  const s = Math.min(1, visibleWidth / 2 / EGG_HALF_WIDTH);
+  const [ax, ay] = EGG_ANCHOR;
+  eggFit = scene.classList.contains('egg') && s < 1
+    ? ` translate(${ax} ${ay}) scale(${s}) translate(${-ax} ${-ay})` : '';
+  $('sun').setAttribute('transform', `${eggFit} translate(800 500)`.trim()); // the yolk
 }
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -81,18 +103,18 @@ function render(p) {
   // scrolling left until the animation ends, in SVG units
   const left = (1 - p) * trackScroll * unitsPerPx;
   for (const m of mountains) {
-    m.el.setAttribute('transform', `translate(0 ${m.speed * left})`);
+    m.el.setAttribute('transform', `translate(0 ${m.speed * left})${m.eggFit ? eggFit : ''}`);
     m.el.setAttribute('fill', mix(m.day, m.dusk, dusk));
   }
 
   // "egg" scene (only visible when selected): the skillet rises with the
   // ground at page speed
-  eggScene.setAttribute('transform', `translate(0 ${left})`);
+  eggScene.setAttribute('transform', `translate(0 ${left})${eggFit}`);
   eggBg.style.opacity = seg(p, 0.15, 0.45); // darker cream fades in (same timing as the day sky)
 }
 
 function progress() {
-  const total = track.offsetHeight - window.innerHeight;
+  const total = track.offsetHeight - stage.offsetHeight;
   return total > 0 ? clamp(-track.getBoundingClientRect().top / total) : 1;
 }
 
@@ -110,14 +132,16 @@ RANGES.push({
   egg: true,
   far: '', mid: '', near: '',
   ground: 'M -40 1000 L -40 545 L 1640 545 L 1640 1000 Z',
+  eggWhite: 'M 380 490 C 380 438, 405 407, 470 405 L 1130 405 C 1195 407, 1220 438, 1220 490 Z', // flat on top, curving down near the edges
 });
 
 let currentRange = 0;
 
 function applyRange(i) {
   currentRange = i;
-  for (const m of mountains) m.el.setAttribute('d', RANGES[i][m.key]);
+  for (const m of mountains) m.el.setAttribute('d', RANGES[i][m.key] ?? ''); // missing layer = not drawn
   scene.classList.toggle('egg', Boolean(RANGES[i].egg)); // CSS swaps the scene
+  fitEgg();
 }
 applyRange(currentRange);
 
@@ -171,6 +195,7 @@ RANGES.forEach((range, i) => rangeMenu.add(new Option(range.name || `Range ${i +
 rangeMenu.value = currentRange;
 rangeMenu.addEventListener('change', () => {
   applyRange(Number(rangeMenu.value));
+  render(progress()); // apply (or undo) the egg fit right away
   sizeMenu();
 });
 

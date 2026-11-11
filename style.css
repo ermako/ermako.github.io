@@ -54,8 +54,12 @@ body {
 .stage {
   position: sticky;
   top: 0;
+  /* A fixed height on phones: lvh is the screen height with the browser's URL
+     bar hidden, and it doesn't change as the bar shows/hides. The scene's
+     scale comes from this height, so the sun's size never changes. (While the
+     bar is showing, the bottom of the scene just sits under the screen edge.) */
   height: 100vh;
-  height: 100dvh; /* follows the mobile address bar as it shows/hides */
+  height: 100lvh;
   overflow: hidden;
   background: var(--paper);
 }
@@ -65,6 +69,8 @@ body {
   position: absolute;
   left: 50%;
   bottom: 2rem;
+  /* lifted by the URL bar's height (0 on desktop), so it's on screen at first load */
+  bottom: calc(2rem + 100lvh - 100svh);
   margin: 0;
   transform: translateX(-50%);
   color: var(--ink);
@@ -88,14 +94,14 @@ body {
   --scene-scale: max(100vw / 1600, 100vh / 1000);
   min-height: calc(50vh - 220 * var(--scene-scale) + 2px);
 }
-/* Uses the phone's "small" screen height (svh), which stays fixed when the
-   browser toolbar slides in or out (e.g. on a tap near the bottom). With the
-   changing height (dvh) the page length shifted mid-tap and the scroll jumped.
-   On desktop svh = vh, so nothing changes there. */
-@supports (height: 100svh) {
+/* Uses the same fixed height as the scene (lvh: the screen with the URL bar
+   hidden), which doesn't change as the browser toolbar slides in or out. With
+   a changing height the page length shifted mid-tap and the scroll jumped.
+   On desktop lvh = vh, so nothing changes there. */
+@supports (height: 100lvh) {
   .earth {
-    --scene-scale: max(100vw / 1600, 100svh / 1000);
-    min-height: calc(50svh - 220 * var(--scene-scale) + 2px);
+    --scene-scale: max(100vw / 1600, 100lvh / 1000);
+    min-height: calc(50lvh - 220 * var(--scene-scale) + 2px);
   }
 }
 .content {

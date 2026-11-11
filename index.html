@@ -68,6 +68,10 @@
         <path id="mtFar"  fill="#a7b3cc" transform="translate(0 650)"/>
         <path id="mtMid"  fill="#7d84a3" transform="translate(0 500)"/>
         <path id="mtNear" fill="#4f4f6e" transform="translate(0 380)"/>
+        <!-- "egg" scene's egg white: a parallax layer like the mountains (shape set
+             from the egg entry in script.js). It moves a bit faster than the
+             skillet, so it starts hidden behind the pan and rises out of it. -->
+        <path id="eggWhite" fill="#ffffff"/>
 
         <!-- "egg" scene (joke option at the end of the menu): a skillet on a gas
              range's grate, and the sun is the yolk. The background stays the
@@ -88,8 +92,6 @@
             <rect x="320" y="530" width="960" height="16" rx="3"/>
           </g>
           <rect x="320" y="530" width="960" height="3" rx="1.5" fill="#78727f"/>
-          <!-- egg white: flat on top, curving down only near the edges -->
-          <path fill="#ffffff" d="M 380 490 C 380 438, 405 407, 470 405 L 1130 405 C 1195 407, 1220 438, 1220 490 Z"/>
           <!-- skillet: handle (its inner end tucks behind the pan's side), side, rim -->
           <path fill="#1b161f" d="M 1255 446 L 1640 410 L 1640 446 L 1255 490 Z"/>
           <path fill="#1b161f" d="M 290 456 L 1310 456 L 1262 504 Q 1255 512 1243 512 L 357 512 Q 345 512 338 504 Z"/>

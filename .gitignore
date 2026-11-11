@@ -1,0 +1,6 @@
+# Python's automatic cache files
+__pycache__/
+# Elevation tiles downloaded by tools/peaks/skyline.py (re-downloaded when needed)
+tools/peaks/.cache/
+# Candidate batches from `skyline.py candidates` (throwaway previews)
+tools/peaks/candidates/

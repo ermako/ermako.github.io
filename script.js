@@ -124,6 +124,10 @@ function progress() {
 // (Clear the choice older versions of the site saved, so it's not left behind.)
 try { localStorage.removeItem('mountainRange'); } catch { /* storage blocked: nothing to clear */ }
 
+// Menu order: "mountains" (ranges.js, the default) first, then the
+// Washington peaks (peaks.js), then the egg below.
+RANGES.push(...PEAKS);
+
 // The joke option at the end of the menu: a fried egg in a skillet instead of
 // mountains (drawn in index.html, #eggScene). Its "ground" is the flat
 // stovetop, kept no lower than the mountain grounds so the menu doesn't move.
@@ -145,13 +149,13 @@ function applyRange(i) {
 }
 applyRange(currentRange);
 
-
 // The top edge of every range's ground, as segments [xMin, xMax, yMax] in SVG
 // units (at rest). The menu sits below the lowest of them, so it stays put
 // whichever range is selected. Read straight from the path data: a line or
 // curve never dips below its lowest (control) point, so that's a safe floor
-// and costs next to nothing. Paths using other commands (e.g. hand-drawn
-// ones) fall back to sampling points along the path.
+// and costs next to nothing. All ground paths use only M/L/C/Z (the
+// generators write them that way, and skyline.py's build converts hand-drawn
+// ones), so nothing else needs handling.
 function groundSegments(d) {
   const tokens = d.match(/[a-zA-Z]|-?\d*\.?\d+(?:e[-+]?\d+)?/g) || [];
   const segs = [];
@@ -164,32 +168,17 @@ function groundSegments(d) {
     let xs, ys;
     if (cmd === 'L') { const x = num(), y = num(); xs = [cx, x]; ys = [cy, y]; cx = x; cy = y; }
     else if (cmd === 'C') { const p = [num(), num(), num(), num(), num(), num()]; xs = [cx, p[0], p[2], p[4]]; ys = [cy, p[1], p[3], p[5]]; cx = p[4]; cy = p[5]; }
-    else return null; // other commands: caller samples instead
+    else continue; // (not used by any ground path)
     if (Math.max(...ys) >= 999) continue; // the shape's sides and bottom, not the top edge
     segs.push([Math.min(...xs), Math.max(...xs), Math.max(...ys)]);
   }
   return segs;
 }
-function sampledSegments(d) {
-  const probe = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  probe.setAttribute('d', d);
-  scene.querySelector('defs').append(probe);
-  const len = probe.getTotalLength(), segs = [];
-  let prev = null;
-  for (let s = 0; s <= len; s += 12) {
-    const pt = probe.getPointAtLength(s);
-    if (prev && pt.y < 999 && prev.y < 999) segs.push([Math.min(prev.x, pt.x) - 6, Math.max(prev.x, pt.x) + 6, Math.max(prev.y, pt.y)]);
-    prev = pt;
-  }
-  probe.remove();
-  return segs;
-}
-const groundEdges = RANGES.map((range) => groundSegments(range.ground) ?? sampledSegments(range.ground));
+const groundEdges = RANGES.map((range) => groundSegments(range.ground));
 
 // ---------- Range menu ----------
 
-// One option per range. A range can have a `name` (e.g. a famous peak you
-// recreate); generated ones fall back to "Range N".
+// One option per range, labelled with its `name` ("Range N" if it has none).
 const rangeMenu = $('rangeMenu');
 RANGES.forEach((range, i) => rangeMenu.add(new Option(range.name || `Range ${i + 1}`, i)));
 rangeMenu.value = currentRange;
@@ -249,14 +238,20 @@ const popupFor = (btn) => document.getElementById(btn.getAttribute('aria-control
 
 function setPopupOpen(btn, open) {
   const popup = popupFor(btn);
-  popup.hidden = !open;
   btn.setAttribute('aria-expanded', String(open));
-  if (!open) return;
+  if (!open) { popup.hidden = true; return; }
   for (const other of popupTriggers) if (other !== btn) setPopupOpen(other, false);
-  // keep the popup on screen: nudge it left if it would run off the right edge
-  popup.style.translate = '';
-  const overflow = popup.getBoundingClientRect().right - (document.documentElement.clientWidth - 16);
-  if (overflow > 0) popup.style.translate = `${-overflow}px 0`;
+  // Keep the popup on screen without it ever sticking out past the right edge,
+  // even for a moment: on phones that makes the browser widen the page, which
+  // jumps the scroll. So measure its width while it's pinned to the screen's
+  // left edge (where it can't stick out), then place it under its link,
+  // shifted left as far as needed to fit. All measuring happens before the
+  // final position is applied, so the browser never lays out an overhang.
+  const room = document.documentElement.clientWidth - 16 - popup.parentElement.getBoundingClientRect().left;
+  Object.assign(popup.style, { position: 'fixed', left: '0', visibility: 'hidden' });
+  popup.hidden = false;
+  const width = popup.getBoundingClientRect().width;
+  Object.assign(popup.style, { position: '', visibility: '', left: `${Math.min(0, room - width)}px` });
 }
 for (const btn of popupTriggers) {
   btn.addEventListener('click', () => setPopupOpen(btn, popupFor(btn).hidden));
@@ -322,6 +317,18 @@ const autoPhrases = TAGLINES_AUTO.filter((t) => t.trim());
 const drawAuto = shuffleBag(autoPhrases);
 // "next" has its own list; falls back to the automatic one while it's empty
 const drawNext = shuffleBag(TAGLINES_NEXT.some((t) => t.trim()) ? TAGLINES_NEXT : autoPhrases);
+
+// Invisible copies of every phrase, stacked behind the tagline (see
+// .tagline-box in style.css): the box takes the height of the longest one at
+// the current screen width, so the links below never move.
+for (const text of new Set([TAGLINE_FIRST, ...TAGLINES_AUTO, ...TAGLINES_NEXT, TAGLINE_EASTER_EGG])) {
+  if (!text.trim()) continue;
+  const sizer = document.createElement('p');
+  sizer.className = 'tagline tagline-sizer';
+  sizer.setAttribute('aria-hidden', 'true');
+  sizer.textContent = text;
+  tagline.parentElement.append(sizer);
+}
 
 // "next" only works once the current phrase has fully faded in, so double
 // clicks (or fast clicking) can't skip through phrases. No visual change.

@@ -122,8 +122,15 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* Every phrase is stacked in one grid cell (the hidden copies just take up
+   space), so the box is as tall as the longest phrase and the links below
+   never jump when a phrase wraps onto another line. */
+.tagline-box { display: grid; margin: 0 0 2.5rem; }
+.tagline-box > * { grid-area: 1 / 1; }
+.tagline-sizer { visibility: hidden; }
+
 .tagline {
-  margin: 0 0 2.5rem;
+  margin: 0;
   opacity: 0.75;
   font-size: 1.15rem;
   line-height: 1.5;
@@ -221,7 +228,6 @@ body {
 /* the sun becomes a yolk: its own yellow gradient, and no sunset colour shift */
 #scene.egg #sunBody { fill: url(#yolkFill); }
 #scene.egg #sunBodyDusk { display: none; }
-
 
 /* Reduced motion: skip the scroll animation and show the finished sunset */
 @media (prefers-reduced-motion: reduce) {

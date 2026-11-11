@@ -98,11 +98,9 @@ function progress() {
 
 // ---------- Mountain range selection ----------
 
-const STORAGE_KEY = 'mountainRange';
-const store = {
-  get() { try { return localStorage.getItem(STORAGE_KEY); } catch { return null; } },
-  set(v) { try { localStorage.setItem(STORAGE_KEY, v); } catch { /* storage blocked: choice just won't persist */ } },
-};
+// The choice isn't remembered: every visit starts on the first range.
+// (Clear the choice older versions of the site saved, so it's not left behind.)
+try { localStorage.removeItem('mountainRange'); } catch { /* storage blocked: nothing to clear */ }
 
 // The joke option at the end of the menu: a fried egg in a skillet instead of
 // mountains (drawn in index.html, #eggScene). Its "ground" is the flat
@@ -114,9 +112,7 @@ RANGES.push({
   ground: 'M -40 1000 L -40 545 L 1640 545 L 1640 1000 Z',
 });
 
-// saved choice, or range 1 if there's none (or it no longer exists)
-const savedRange = parseInt(store.get(), 10);
-let currentRange = savedRange >= 0 && savedRange < RANGES.length ? savedRange : 0;
+let currentRange = 0;
 
 function applyRange(i) {
   currentRange = i;
@@ -175,7 +171,6 @@ RANGES.forEach((range, i) => rangeMenu.add(new Option(range.name || `Range ${i +
 rangeMenu.value = currentRange;
 rangeMenu.addEventListener('change', () => {
   applyRange(Number(rangeMenu.value));
-  store.set(rangeMenu.value);
   sizeMenu();
 });
 
@@ -220,26 +215,36 @@ function placeMenu() {
 }
 document.fonts?.ready.then(() => { sizeMenu(); placeMenu(); });
 
-// ---------- Contact popup ----------
+// ---------- Info popups ("blog", "contact") ----------
 
-const contactBtn = $('contactBtn');
-const contactPopup = $('contactPopup');
+// Any button with class "popup-trigger" toggles the popup named in its
+// aria-controls. Only one is open at a time; clicking elsewhere or Esc closes it.
+const popupTriggers = [...document.querySelectorAll('.popup-trigger')];
+const popupFor = (btn) => document.getElementById(btn.getAttribute('aria-controls'));
 
-function setContactOpen(open) {
-  contactPopup.hidden = !open;
-  contactBtn.setAttribute('aria-expanded', String(open));
+function setPopupOpen(btn, open) {
+  const popup = popupFor(btn);
+  popup.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
   if (!open) return;
+  for (const other of popupTriggers) if (other !== btn) setPopupOpen(other, false);
   // keep the popup on screen: nudge it left if it would run off the right edge
-  contactPopup.style.translate = '';
-  const overflow = contactPopup.getBoundingClientRect().right - (document.documentElement.clientWidth - 16);
-  if (overflow > 0) contactPopup.style.translate = `${-overflow}px 0`;
+  popup.style.translate = '';
+  const overflow = popup.getBoundingClientRect().right - (document.documentElement.clientWidth - 16);
+  if (overflow > 0) popup.style.translate = `${-overflow}px 0`;
 }
-contactBtn.addEventListener('click', () => setContactOpen(contactPopup.hidden));
+for (const btn of popupTriggers) {
+  btn.addEventListener('click', () => setPopupOpen(btn, popupFor(btn).hidden));
+}
 document.addEventListener('click', (e) => {
-  if (!contactPopup.hidden && !contactBtn.contains(e.target) && !contactPopup.contains(e.target)) setContactOpen(false);
+  for (const btn of popupTriggers) {
+    if (!popupFor(btn).hidden && !btn.contains(e.target) && !popupFor(btn).contains(e.target)) setPopupOpen(btn, false);
+  }
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !contactPopup.hidden) { setContactOpen(false); contactBtn.focus(); }
+  if (e.key !== 'Escape') return;
+  const open = popupTriggers.find((btn) => !popupFor(btn).hidden);
+  if (open) { setPopupOpen(open, false); open.focus(); }
 });
 
 // ---------- Scroll wiring ----------

@@ -116,12 +116,15 @@
       <!-- Phrases live in taglines.js; script.js rotates them -->
       <p class="tagline" id="tagline">it was cloudy, but i used my imagination.</p>
       <ul class="links">
-        <li><a href="/">blog</a></li>
+        <li class="has-popup">
+          <button type="button" class="link-button popup-trigger" aria-expanded="false" aria-controls="blogPopup">blog</button>
+          <span class="info-popup" id="blogPopup" hidden>coming soon</span>
+        </li>
         <li><a href="https://github.com/ermako">github</a></li>
         <li><a href="https://www.peakbagger.com/climber/climber.aspx?cid=47973">peakbagger</a></li>
-        <li class="contact">
-          <button type="button" class="link-button" id="contactBtn" aria-expanded="false" aria-controls="contactPopup">contact</button>
-          <span class="contact-popup" id="contactPopup" hidden>eric dot koegler at outlook dot com</span>
+        <li class="has-popup">
+          <button type="button" class="link-button popup-trigger" aria-expanded="false" aria-controls="contactPopup">contact</button>
+          <span class="info-popup" id="contactPopup" hidden>eric dot koegler at outlook dot com</span>
         </li>
         <li><button type="button" class="link-button" id="nextTagline" aria-label="next tagline">next</button></li>
       </ul>

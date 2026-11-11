@@ -88,10 +88,14 @@ body {
   --scene-scale: max(100vw / 1600, 100vh / 1000);
   min-height: calc(50vh - 220 * var(--scene-scale) + 2px);
 }
-@supports (height: 100dvh) {
+/* Uses the phone's "small" screen height (svh), which stays fixed when the
+   browser toolbar slides in or out (e.g. on a tap near the bottom). With the
+   changing height (dvh) the page length shifted mid-tap and the scroll jumped.
+   On desktop svh = vh, so nothing changes there. */
+@supports (height: 100svh) {
   .earth {
-    --scene-scale: max(100vw / 1600, 100dvh / 1000);
-    min-height: calc(50dvh - 220 * var(--scene-scale) + 2px);
+    --scene-scale: max(100vw / 1600, 100svh / 1000);
+    min-height: calc(50svh - 220 * var(--scene-scale) + 2px);
   }
 }
 .content {
@@ -146,9 +150,10 @@ body {
   cursor: pointer;
 }
 
-/* Small, quiet popup under "contact" with the spelled-out address */
-.contact { position: relative; }
-.contact-popup {
+/* Small, quiet info popups under a link ("blog": coming soon, "contact": the
+   spelled-out address) */
+.has-popup { position: relative; }
+.info-popup {
   position: absolute;
   left: 0;
   top: calc(100% + 0.75rem);
@@ -166,7 +171,7 @@ body {
   animation: popup-in 0.15s ease-out;
 }
 @keyframes popup-in { from { opacity: 0; transform: translateY(-0.25rem); } }
-@media (prefers-reduced-motion: reduce) { .contact-popup { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .info-popup { animation: none; } }
 
 /* ---------- Mountain range menu ---------- */
 

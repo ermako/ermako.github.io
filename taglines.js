@@ -4,7 +4,7 @@
 // Timings, in milliseconds
 const TAGLINE_FIRST_MS = 10000;    // how long the first phrase stays (counted from when it scrolls into view)
 const TAGLINE_CHANGE_MS = 10000;    // how often the phrase changes on its own after that
-const TAGLINE_FADE_OUT_MS = 1000;   // fade out
+const TAGLINE_FADE_OUT_MS = 1001;   // fade out
 const TAGLINE_PAUSE_MS = 50;      // pause while hidden, before the new phrase
 const TAGLINE_FADE_IN_MS = 1300;   // fade in
 

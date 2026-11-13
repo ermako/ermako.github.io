@@ -62,52 +62,57 @@
         <!-- egg scene only: darker cream that fades in over the opening cream -->
         <rect id="eggBg" class="egg-bg" width="1600" height="1000" fill="#ddd3c3" opacity="0"/>
 
-        <!-- The sun stays at the screen centre; the mountains rise over it -->
-        <g id="sun" transform="translate(800 500)">
-          <circle id="sunGlow"     r="600" fill="url(#glow)"        opacity="0"/>
-          <circle id="sunBody"     r="220" fill="url(#sunFill)"     opacity="0"/>
-          <circle id="sunBodyDusk" r="220" fill="url(#sunFillDusk)" opacity="0"/>
-          <circle id="sunOutline"  r="220" fill="none" stroke="#2a2420" stroke-width="3"/>
-        </g>
-
-        <!-- Mountain layers, far → near. Each is one flat colour, lighter = further away.
-             Shapes come from ranges.js ("mountains") and peaks.js (tools/peaks/skyline.py);
-             slide-in and colours are set in script.js. -->
-        <path id="mtFar"  fill="#a7b3cc" transform="translate(0 650)"/>
-        <path id="mtMid"  fill="#7d84a3" transform="translate(0 500)"/>
-        <path id="mtNear" fill="#4f4f6e" transform="translate(0 380)"/>
-        <!-- "egg" scene's egg white: a parallax layer like the mountains (shape set
-             from the egg entry in script.js). It moves a bit faster than the
-             skillet, so it starts hidden behind the pan and rises out of it. -->
-        <path id="eggWhite" fill="#ffffff"/>
-
-        <!-- "egg" scene (joke option at the end of the menu): a skillet on a gas
-             range's grate, and the sun is the yolk. The background stays the
-             opening cream. Drawn at its resting place; it rises as one piece
-             with the ground (the stovetop). -->
-        <g id="eggScene" transform="translate(0 300)">
-          <!-- background-coloured patch under the pan: keeps the yolk from showing through the grate -->
-          <rect class="egg-bg" x="330" y="500" width="940" height="48" fill="#ddd3c3"/>
-          <!-- burner head (no flame) -->
-          <path fill="#3b3742" d="M 735 545 L 740 528 Q 742 524 748 524 L 852 524 Q 858 524 860 528 L 865 545 Z"/>
-          <rect x="745" y="519" width="110" height="6" rx="3" fill="#5a5562"/>
-          <!-- steel grate: support prongs up to the pan, on a rail along the stovetop -->
-          <g fill="#5a5562">
-            <path d="M 404 512 L 426 512 L 430 532 L 400 532 Z"/>
-            <path d="M 604 512 L 626 512 L 630 532 L 600 532 Z"/>
-            <path d="M 974 512 L 996 512 L 1000 532 L 970 532 Z"/>
-            <path d="M 1174 512 L 1196 512 L 1200 532 L 1170 532 Z"/>
-            <rect x="320" y="530" width="960" height="16" rx="3"/>
+        <!-- The "world": sun, mountains and egg scene, lifted together so the sun
+             sits a bit above the middle of the screen (the amount is SCENE_LIFT in
+             script.js, which sets this transform). -->
+        <g id="world" transform="translate(0 -150)">
+          <!-- The sun stays put on screen; the mountains rise over it -->
+          <g id="sun" transform="translate(800 500)">
+            <circle id="sunGlow"     r="600" fill="url(#glow)"        opacity="0"/>
+            <circle id="sunBody"     r="220" fill="url(#sunFill)"     opacity="0"/>
+            <circle id="sunBodyDusk" r="220" fill="url(#sunFillDusk)" opacity="0"/>
+            <circle id="sunOutline"  r="220" fill="none" stroke="#2a2420" stroke-width="3"/>
           </g>
-          <rect x="320" y="530" width="960" height="3" rx="1.5" fill="#78727f"/>
-          <!-- skillet: handle (its inner end tucks behind the pan's side), side, rim -->
-          <path fill="#1b161f" d="M 1255 446 L 1640 410 L 1640 446 L 1255 490 Z"/>
-          <path fill="#1b161f" d="M 290 456 L 1310 456 L 1262 504 Q 1255 512 1243 512 L 357 512 Q 345 512 338 504 Z"/>
-          <path fill="#1b161f" d="M 270 448 Q 270 442 278 442 L 1322 442 Q 1330 442 1330 448 L 1330 452 Q 1330 458 1322 458 L 278 458 Q 270 458 270 452 Z"/>
-        </g>
 
-        <!-- Nearest layer = the ground; its colour must match --earth in style.css -->
-        <path id="ground" fill="#2a2232" transform="translate(0 300)"/>
+          <!-- Mountain layers, far → near. Each is one flat colour, lighter = further away.
+               Shapes come from ranges.js ("mountains") and peaks.js (tools/peaks/skyline.py);
+               slide-in and colours are set in script.js. -->
+          <path id="mtFar"  fill="#a7b3cc" transform="translate(0 650)"/>
+          <path id="mtMid"  fill="#7d84a3" transform="translate(0 500)"/>
+          <path id="mtNear" fill="#4f4f6e" transform="translate(0 380)"/>
+          <!-- "egg" scene's egg white: a parallax layer like the mountains (shape set
+               from the egg entry in script.js). It moves a bit faster than the
+               skillet, so it starts hidden behind the pan and rises out of it. -->
+          <path id="eggWhite" fill="#ffffff"/>
+
+          <!-- "egg" scene (joke option at the end of the menu): a skillet on a gas
+               range's grate, and the sun is the yolk. The background stays the
+               opening cream. Drawn at its resting place; it rises as one piece
+               with the ground (the stovetop). -->
+          <g id="eggScene" transform="translate(0 300)">
+            <!-- background-coloured patch under the pan: keeps the yolk from showing through the grate -->
+            <rect class="egg-bg" x="330" y="500" width="940" height="48" fill="#ddd3c3"/>
+            <!-- burner head (no flame) -->
+            <path fill="#3b3742" d="M 735 545 L 740 528 Q 742 524 748 524 L 852 524 Q 858 524 860 528 L 865 545 Z"/>
+            <rect x="745" y="519" width="110" height="6" rx="3" fill="#5a5562"/>
+            <!-- steel grate: support prongs up to the pan, on a rail along the stovetop -->
+            <g fill="#5a5562">
+              <path d="M 404 512 L 426 512 L 430 532 L 400 532 Z"/>
+              <path d="M 604 512 L 626 512 L 630 532 L 600 532 Z"/>
+              <path d="M 974 512 L 996 512 L 1000 532 L 970 532 Z"/>
+              <path d="M 1174 512 L 1196 512 L 1200 532 L 1170 532 Z"/>
+              <rect x="320" y="530" width="960" height="16" rx="3"/>
+            </g>
+            <rect x="320" y="530" width="960" height="3" rx="1.5" fill="#78727f"/>
+            <!-- skillet: handle (its inner end tucks behind the pan's side), side, rim -->
+            <path fill="#1b161f" d="M 1255 446 L 1640 410 L 1640 446 L 1255 490 Z"/>
+            <path fill="#1b161f" d="M 290 456 L 1310 456 L 1262 504 Q 1255 512 1243 512 L 357 512 Q 345 512 338 504 Z"/>
+            <path fill="#1b161f" d="M 270 448 Q 270 442 278 442 L 1322 442 Q 1330 442 1330 448 L 1330 452 Q 1330 458 1322 458 L 278 458 Q 270 458 270 452 Z"/>
+          </g>
+
+          <!-- Nearest layer = the ground; its colour must match --earth in style.css -->
+          <path id="ground" fill="#2a2232" transform="translate(0 300)"/>
+        </g>
       </svg>
 
       <p class="hint" id="hint">scroll
@@ -123,33 +128,36 @@
          rides up with the ground (which moves at page speed) and comes to rest
          on it as the sunset finishes. Options are filled in by script.js. -->
     <select class="range-menu" id="rangeMenu" aria-label="Mountain range"></select>
+
+    <!-- Your name and links. They sit on the ground at the bottom of the scroll
+         track (like the range menu), so they rise with the ground, and the page
+         ends exactly when the sun has set. -->
+    <main class="earth">
+      <div class="content">
+        <h1>Eric Koegler</h1>
+        <!-- Phrases live in taglines.js; script.js rotates them. script.js also adds
+             an invisible copy of every phrase here, stacked in the same spot, so the
+             box is always as tall as the longest one needs at this screen width. -->
+        <div class="tagline-box">
+          <p class="tagline" id="tagline">it was cloudy, but i used my imagination.</p>
+        </div>
+        <ul class="links">
+          <li class="has-popup">
+            <button type="button" class="link-button popup-trigger" aria-expanded="false" aria-controls="blogPopup">blog</button>
+            <span class="info-popup" id="blogPopup" hidden>coming soon</span>
+          </li>
+          <li><a href="https://github.com/ermako">github</a></li>
+          <li><a href="https://www.peakbagger.com/climber/climber.aspx?cid=47973">peakbagger</a></li>
+          <li class="has-popup">
+            <button type="button" class="link-button popup-trigger" aria-expanded="false" aria-controls="contactPopup">contact</button>
+            <span class="info-popup" id="contactPopup" hidden>eric dot koegler at outlook dot com</span>
+          </li>
+          <li><button type="button" class="link-button" id="nextTagline" aria-label="next tagline">next</button></li>
+        </ul>
+      </div>
+    </main>
   </div>
 
-  <!-- The "earth": continues the ground colour, holds the actual content -->
-  <main class="earth">
-    <div class="content">
-      <h1>Eric Koegler</h1>
-      <!-- Phrases live in taglines.js; script.js rotates them. script.js also adds
-           an invisible copy of every phrase here, stacked in the same spot, so the
-           box is always as tall as the longest one needs at this screen width. -->
-      <div class="tagline-box">
-        <p class="tagline" id="tagline">it was cloudy, but i used my imagination.</p>
-      </div>
-      <ul class="links">
-        <li class="has-popup">
-          <button type="button" class="link-button popup-trigger" aria-expanded="false" aria-controls="blogPopup">blog</button>
-          <span class="info-popup" id="blogPopup" hidden>coming soon</span>
-        </li>
-        <li><a href="https://github.com/ermako">github</a></li>
-        <li><a href="https://www.peakbagger.com/climber/climber.aspx?cid=47973">peakbagger</a></li>
-        <li class="has-popup">
-          <button type="button" class="link-button popup-trigger" aria-expanded="false" aria-controls="contactPopup">contact</button>
-          <span class="info-popup" id="contactPopup" hidden>eric dot koegler at outlook dot com</span>
-        </li>
-        <li><button type="button" class="link-button" id="nextTagline" aria-label="next tagline">next</button></li>
-      </ul>
-    </div>
-  </main>
 
   <script src="ranges.js"></script>
   <script src="peaks.js"></script>

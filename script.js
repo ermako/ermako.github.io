@@ -38,6 +38,17 @@ const mountains = [
 // Converting scroll pixels to SVG units (the viewBox is 1600x1000 with
 // "slice" scaling, so this depends on the window shape). Updated on resize.
 const scene = $('scene');
+
+// How far the whole scene (sun, mountains, egg) is lifted, in SVG units out of
+// the picture's 1000 height: 0 keeps the sun in the middle of the screen, 150
+// would put it 15% above. The sky gradients shift with it so the glow stays on
+// the horizon, and the text follows the horizon too (see placeMenu).
+const SCENE_LIFT = 0;
+$('world').setAttribute('transform', `translate(0 ${-SCENE_LIFT})`);
+for (const id of ['skyDay', 'skyDusk']) $(id).setAttribute('gradientTransform', `translate(0 ${-SCENE_LIFT / 1000})`);
+// The ground layer is extended down past the picture's bottom edge, so lifting
+// the scene never opens a gap below it (y >= 1000 is ignored by the menu maths).
+const GROUND_EXTENSION = ' M -40 1000 L 1640 1000 L 1640 1400 L -40 1400 Z';
 const eggScene = $('eggScene');
 const eggBg = $('eggBg');
 let unitsPerPx = 1;
@@ -144,6 +155,7 @@ let currentRange = 0;
 function applyRange(i) {
   currentRange = i;
   for (const m of mountains) m.el.setAttribute('d', RANGES[i][m.key] ?? ''); // missing layer = not drawn
+  $('ground').setAttribute('d', RANGES[i].ground + GROUND_EXTENSION);
   scene.classList.toggle('egg', Boolean(RANGES[i].egg)); // CSS swaps the scene
   fitEgg();
 }
@@ -225,7 +237,14 @@ function placeMenu() {
   for (const segs of groundEdges) for (const [a, b, y] of segs) if (b >= x1 && a <= x2 && y > edge) edge = y;
   if (edge === -Infinity) return;
   const GAP = 10; // extra px between the ground's edge and the menu's box (its padding already adds a little)
-  rangeMenu.style.bottom = `${r.height - (offY + edge * scale) - GAP - m.height}px`;
+  const menuBottom = r.height - (offY + (edge - SCENE_LIFT) * scale) - GAP - m.height;
+  rangeMenu.style.bottom = `${menuBottom}px`;
+
+  // Your name and links sit TEXT_GAP below the menu, so they're near the
+  // horizon on any screen shape (CSS keeps them on screen if that's too low).
+  const TEXT_GAP = 24;
+  const earth = document.querySelector('.earth');
+  earth.style.setProperty('--text-bottom', `${menuBottom - TEXT_GAP - earth.offsetHeight}px`);
 }
 document.fonts?.ready.then(() => { sizeMenu(); placeMenu(); });
 

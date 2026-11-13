@@ -57,7 +57,10 @@ body {
   /* A fixed height on phones: lvh is the screen height with the browser's URL
      bar hidden, and it doesn't change as the bar shows/hides. The scene's
      scale comes from this height, so the sun's size never changes. (While the
-     bar is showing, the bottom of the scene just sits under the screen edge.) */
+     bar is showing, the bottom of the scene just sits under the screen edge.)
+     Pinned to the top, not the bottom: pinning to the bottom needs dvh, which
+     phone browsers update in delayed steps as the toolbar moves, so the scene
+     lagged behind it instead of staying still. */
   height: 100vh;
   height: 100lvh;
   overflow: hidden;
@@ -83,40 +86,24 @@ body {
 }
 .hint-arrow { width: 0.85em; height: 1.15em; flex: none; }
 
+/* Your name and links: pinned to the bottom of the scroll track (like the
+   range menu), so they rise with the ground and the page ends exactly when the
+   sun has set, with no scrolling past the scene. Lifted by the phone URL bar's
+   height (0 on desktop) so they're on screen whether or not the bar shows. */
 .earth {
-  /* Overlap the bottom of the scene by 2px and paint a solid background over
-     it, so the scene's anti-aliased bottom edge can't show as a thin line. */
-  position: relative;
-  margin-top: -2px;
-  background: var(--earth);
-  padding: calc(0.5rem + 2px) 1.5rem 1.25rem;
-
-  /* Where the page ends: you can scroll until the top of the sun reaches the
-     top of the screen, and no further. The sun's top is 220 SVG units above
-     the screen's middle, and the scene is scaled like the SVG's "slice"
-     (the larger of width/1600 and height/1000). Taller content still fits. */
-  --scene-scale: max(100vw / 1600, 100vh / 1000);
-  min-height: calc(50vh - 220 * var(--scene-scale) + 2px);
-}
-/* Uses the same fixed height as the scene (lvh: the screen with the URL bar
-   hidden), which doesn't change as the browser toolbar slides in or out. With
-   a changing height the page length shifted mid-tap and the scroll jumped.
-   On desktop lvh = vh, so nothing changes there. */
-@supports (height: 100lvh) {
-  .earth {
-    --scene-scale: max(100vw / 1600, 100lvh / 1000);
-    min-height: calc(50lvh - 220 * var(--scene-scale) + 2px);
-  }
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* --text-bottom is set by script.js to sit the text just under the range
+     menu (near the horizon); the minimum keeps it, and its popups, on screen */
+  bottom: max(3.5rem, var(--text-bottom, 3.5rem));
+  bottom: max(calc(3.5rem + 100lvh - 100svh), var(--text-bottom, 3.5rem));
+  padding: 0 1.5rem;
 }
 .content {
   width: 100%;
   max-width: 40rem;
   margin: 0 auto;
-  /* Pull the text up out of <main> onto the scene's ground, so it sits just
-     under the horizon and is centred on screen at the bottom of the page.
-     (220 × scale = how far <main>'s top sits below the screen's middle there;
-     5.5rem ≈ half the text block's height.) It still moves with the page. */
-  margin-top: calc(-220 * var(--scene-scale) - 5.5rem);
 }
 
 .earth h1 {

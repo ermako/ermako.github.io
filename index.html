@@ -20,19 +20,20 @@
        The stage inside sticks to the screen while you scroll through it. -->
   <div class="track" id="track">
     <div class="stage">
+      <!-- The sky and the sun's glow: big gradients that only ever fade, so they
+           live outside the SVG as their own layers. The browser draws them once
+           and just blends them as they fade, instead of redrawing them with the
+           scene on every frame (that was most of the drawing work on phones).
+           Sized and placed exactly like the SVG picture (see .sky in style.css). -->
+      <div class="sky" aria-hidden="true">
+        <div class="sky-layer" id="skyDayLayer"></div>
+        <div class="sky-layer" id="skyDuskLayer"></div>
+        <!-- egg scene only: darker cream that fades in over the opening cream -->
+        <div class="sky-layer" id="eggBg"></div>
+        <div class="sky-layer" id="sunGlow"></div>
+      </div>
       <svg id="scene" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
-          <linearGradient id="skyDay" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#a9cde9"/>
-            <stop offset="0.65" stop-color="#f7e6bd"/>
-          </linearGradient>
-          <linearGradient id="skyDusk" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#231c45"/>
-            <stop offset="0.35" stop-color="#6b2f6e"/>
-            <stop offset="0.55" stop-color="#d1496b"/>
-            <stop offset="0.65" stop-color="#f7934c"/>
-          </linearGradient>
-
           <radialGradient id="sunFill" cx="0.5" cy="0.5" r="0.7">
             <stop offset="0" stop-color="#fff7d1"/>
             <stop offset="0.5" stop-color="#ffc35a"/>
@@ -49,26 +50,15 @@
             <stop offset="0.5" stop-color="#ffdc45"/>
             <stop offset="1" stop-color="#f7b500"/>
           </radialGradient>
-          <radialGradient id="glow">
-            <stop offset="0" stop-color="#ffb35c" stop-opacity="0.7"/>
-            <stop offset="1" stop-color="#ffb35c" stop-opacity="0"/>
-          </radialGradient>
         </defs>
 
-        <!-- Layers are painted bottom to top -->
-        <rect id="paper" width="1600" height="1000" fill="#f4efe6"/>
-        <rect id="skyDayLayer"  width="1600" height="1000" fill="url(#skyDay)"  opacity="0"/>
-        <rect id="skyDuskLayer" width="1600" height="1000" fill="url(#skyDusk)" opacity="0"/>
-        <!-- egg scene only: darker cream that fades in over the opening cream -->
-        <rect id="eggBg" class="egg-bg" width="1600" height="1000" fill="#ddd3c3" opacity="0"/>
-
+        <!-- Layers are painted bottom to top (the sky and glow are behind, in .sky) -->
         <!-- The "world": sun, mountains and egg scene, lifted together so the sun
              sits a bit above the middle of the screen (the amount is SCENE_LIFT in
              script.js, which sets this transform). -->
         <g id="world" transform="translate(0 -150)">
           <!-- The sun stays put on screen; the mountains rise over it -->
           <g id="sun" transform="translate(800 500)">
-            <circle id="sunGlow"     r="600" fill="url(#glow)"        opacity="0"/>
             <circle id="sunBody"     r="220" fill="url(#sunFill)"     opacity="0"/>
             <circle id="sunBodyDusk" r="220" fill="url(#sunFillDusk)" opacity="0"/>
             <circle id="sunOutline"  r="220" fill="none" stroke="#2a2420" stroke-width="3"/>

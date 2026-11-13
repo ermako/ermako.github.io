@@ -66,7 +66,30 @@ body {
   overflow: hidden;
   background: var(--paper);
 }
-.stage > svg { display: block; width: 100%; height: 100%; } /* the scene (not the hint's arrow) */
+.stage > svg { position: relative; display: block; width: 100%; height: 100%; } /* the scene (not the hint's arrow) */
+
+/* The sky and the sun's glow, behind the SVG. Each is its own layer that only
+   changes opacity, so the browser draws it once and just blends it as it
+   fades. The box matches the SVG picture exactly: 1600x1000 units, scaled like
+   "slice" (--s, the size of one unit, is set by script.js), centred, and
+   lifted with the scene (--lift, also from script.js). */
+.sky {
+  --s: max(100vw / 1600, 100vh / 1000);   /* until script.js sets the exact value */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(1600 * var(--s));
+  height: calc(1000 * var(--s));
+  transform: translate(-50%, -50%) translateY(calc(var(--lift, 0) * -1 * var(--s)));
+}
+/* 2px past the box at the top and bottom, so rounding can't leave a sliver of
+   uncovered screen edge */
+.sky-layer { position: absolute; inset: -2px 0; opacity: 0; will-change: opacity; }
+#skyDayLayer { background: linear-gradient(#a9cde9 0%, #f7e6bd 65%); }
+#skyDuskLayer { background: linear-gradient(#231c45 0%, #6b2f6e 35%, #d1496b 55%, #f7934c 65%); }
+#eggBg { background: var(--egg-bg); }
+/* centred on the sun (800, 500), radius 600 units */
+#sunGlow { background: radial-gradient(circle calc(600 * var(--s)) at 50% 50%, rgb(255 179 92 / 0.7), rgb(255 179 92 / 0)); }
 
 .hint {
   position: absolute;
@@ -210,15 +233,16 @@ body {
 /* Hidden unless "egg" is picked; then it replaces the mountains, and the sky
    and glow are hidden so the background stays the opening cream */
 #eggScene, #eggBg { display: none; }
-#scene.egg #eggScene, #scene.egg #eggBg { display: inline; }
-#scene.egg :is(#skyDayLayer, #skyDuskLayer, #sunGlow, #mtFar, #mtMid, #mtNear) { display: none; }
+.stage.egg #eggScene { display: inline; }
+.stage.egg #eggBg { display: block; }
+.stage.egg :is(#skyDayLayer, #skyDuskLayer, #sunGlow, #mtFar, #mtMid, #mtNear) { display: none; }
 /* egg scene background: starts as the opening cream, then a darker cream
    (same tint) fades in (#eggBg, timed in script.js) */
-#scene { --egg-bg: #ddd3c3; }
-#scene .egg-bg { fill: var(--egg-bg); }
+.stage { --egg-bg: #ddd3c3; }
+.stage .egg-bg { fill: var(--egg-bg); }
 /* the sun becomes a yolk: its own yellow gradient, and no sunset colour shift */
-#scene.egg #sunBody { fill: url(#yolkFill); }
-#scene.egg #sunBodyDusk { display: none; }
+.stage.egg #sunBody { fill: url(#yolkFill); }
+.stage.egg #sunBodyDusk { display: none; }
 
 /* Reduced motion: skip the scroll animation and show the finished sunset */
 @media (prefers-reduced-motion: reduce) {

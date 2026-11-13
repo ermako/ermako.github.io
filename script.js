@@ -45,7 +45,7 @@ const scene = $('scene');
 // the horizon, and the text follows the horizon too (see placeMenu).
 const SCENE_LIFT = 0;
 $('world').setAttribute('transform', `translate(0 ${-SCENE_LIFT})`);
-for (const id of ['skyDay', 'skyDusk']) $(id).setAttribute('gradientTransform', `translate(0 ${-SCENE_LIFT / 1000})`);
+stage.style.setProperty('--lift', SCENE_LIFT); // the sky layers (.sky in style.css) follow the lift
 // The ground layer is extended down past the picture's bottom edge, so lifting
 // the scene never opens a gap below it (y >= 1000 is ignored by the menu maths).
 const GROUND_EXTENSION = ' M -40 1000 L 1640 1000 L 1640 1400 L -40 1400 Z';
@@ -56,6 +56,7 @@ let trackScroll = 0; // how many px of scrolling the animation lasts
 function measure() {
   const r = scene.getBoundingClientRect();
   unitsPerPx = 1 / Math.max(r.width / 1600, r.height / 1000);
+  stage.style.setProperty('--s', `${1 / unitsPerPx}px`); // one SVG unit, for the sky layers
   // the stage's height (fixed on phones), not the window's, which changes as
   // the URL bar shows/hides; the sticky part of the scroll lasts this long
   trackScroll = Math.max(0, track.offsetHeight - stage.offsetHeight);
@@ -69,13 +70,26 @@ function measure() {
 let eggFit = ''; // extra transform for the egg pieces ('' = none)
 const EGG_ANCHOR = [800, 545];  // centre of the stovetop under the pan (SVG units)
 const EGG_HALF_WIDTH = 700;     // pan + a bit of handle, from the centre (SVG units)
+const EGG_TOP = 410;            // the skillet's highest point (its handle), at rest (SVG units)
+let yolkDoneAt = 0.4;           // scroll progress when the sun/yolk has fully filled in (set by fitEgg)
 function fitEgg() {
   const visibleWidth = scene.getBoundingClientRect().width * unitsPerPx;
   const s = Math.min(1, visibleWidth / 2 / EGG_HALF_WIDTH);
   const [ax, ay] = EGG_ANCHOR;
-  eggFit = scene.classList.contains('egg') && s < 1
+  const isEgg = stage.classList.contains('egg');
+  eggFit = isEgg && s < 1
     ? ` translate(${ax} ${ay}) scale(${s}) translate(${-ax} ${-ay})` : '';
   $('sun').setAttribute('transform', `${eggFit} translate(800 500)`.trim()); // the yolk
+
+  // The yolk's colour finishes filling in just as the skillet's top edge (its
+  // handle) first rises into view. The skillet moves with the ground at page
+  // speed, so that's when the scroll left, in SVG units, equals the distance
+  // from the bottom of the screen up to the skillet's top at rest.
+  const r = scene.getBoundingClientRect();
+  const screenBottom = 500 + (r.height / 2) * unitsPerPx + SCENE_LIFT; // in the scene's units
+  const skilletTop = ay + (EGG_TOP - ay) * (eggFit ? s : 1);
+  const scrollUnits = trackScroll * unitsPerPx;
+  yolkDoneAt = isEgg && scrollUnits > 0 ? clamp(1 - (screenBottom - skilletTop) / scrollUnits, 0.2, 1) : 0.4;
 }
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -92,36 +106,48 @@ const mix = (a, b, t) => {
     Math.round(lerp(c(a, i), c(b, i), t)).toString(16).padStart(2, '0')).join('');
 };
 
+// Set a style or attribute only if it changed since the last frame: avoids
+// making the browser redo work for values that stay put (most of the scroll).
+const lastValues = new WeakMap();
+function put(el, key, value) {
+  let last = lastValues.get(el);
+  if (!last) lastValues.set(el, (last = {}));
+  if (last[key] === value) return;
+  last[key] = value;
+  if (key === 'opacity') el.style.opacity = value;
+  else el.setAttribute(key, value);
+}
+
 function render(p) {
   // colour revealed by bounce-scrolling (see html.at-top in style.css)
   document.documentElement.classList.toggle('at-top', p < 0.5);
 
-  els.hint.style.opacity = 0.7 * (1 - seg(p, 0, 0.30)); // "scroll" hint fades out over the first 16%
+  put(els.hint, 'opacity', 0.7 * (1 - seg(p, 0, 0.30))); // "scroll" hint fades out over the first 30%
 
   // 1. plain circle → filled sun
-  els.sunBody.style.opacity = seg(p, 0.1, 0.4);
-  els.sunOutline.style.opacity = 1 - seg(p, 0.08, 0.25);
+  put(els.sunBody, 'opacity', seg(p, 0.1, yolkDoneAt)); // 0.4, or later for the egg's yolk (see fitEgg)
+  put(els.sunOutline, 'opacity', 1 - seg(p, 0.08, 0.25));
 
   // 2. day sky appears, mountains slide up from below the screen
-  els.skyDay.style.opacity = seg(p, 0.15, 0.45);
-  els.sunGlow.style.opacity = seg(p, 0.25, 0.55);
+  put(els.skyDay, 'opacity', seg(p, 0.15, 0.45));
+  put(els.sunGlow, 'opacity', seg(p, 0.25, 0.55));
 
   // 3. mountains climb over the (stationary) sun, sky turns to dusk
   const dusk = seg(p, 0.55, 0.95);
-  els.sunBodyDusk.style.opacity = dusk;
-  els.skyDusk.style.opacity = dusk;
+  put(els.sunBodyDusk, 'opacity', dusk);
+  put(els.skyDusk, 'opacity', dusk);
 
   // scrolling left until the animation ends, in SVG units
   const left = (1 - p) * trackScroll * unitsPerPx;
   for (const m of mountains) {
-    m.el.setAttribute('transform', `translate(0 ${m.speed * left})${m.eggFit ? eggFit : ''}`);
-    m.el.setAttribute('fill', mix(m.day, m.dusk, dusk));
+    put(m.el, 'transform', `translate(0 ${m.speed * left})${m.eggFit ? eggFit : ''}`);
+    put(m.el, 'fill', mix(m.day, m.dusk, dusk));
   }
 
   // "egg" scene (only visible when selected): the skillet rises with the
   // ground at page speed
-  eggScene.setAttribute('transform', `translate(0 ${left})${eggFit}`);
-  eggBg.style.opacity = seg(p, 0.15, 0.45); // darker cream fades in (same timing as the day sky)
+  put(eggScene, 'transform', `translate(0 ${left})${eggFit}`);
+  put(eggBg, 'opacity', seg(p, 0.15, 0.45)); // darker cream fades in (same timing as the day sky)
 }
 
 function progress() {
@@ -156,7 +182,7 @@ function applyRange(i) {
   currentRange = i;
   for (const m of mountains) m.el.setAttribute('d', RANGES[i][m.key] ?? ''); // missing layer = not drawn
   $('ground').setAttribute('d', RANGES[i].ground + GROUND_EXTENSION);
-  scene.classList.toggle('egg', Boolean(RANGES[i].egg)); // CSS swaps the scene
+  stage.classList.toggle('egg', Boolean(RANGES[i].egg)); // CSS swaps the scene
   fitEgg();
 }
 applyRange(currentRange);
